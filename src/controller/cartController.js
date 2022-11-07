@@ -70,9 +70,7 @@ let getCart = async (req, res) => {
     try {
         let id_account = auth.tokenData(req).id_account
         //select name,price,images from cart c,product p where c.id_account=id_account and c.id_product =p.id_product
-        console.log('id account: ', id_account);
         let check = await checkCart(id_account)
-        console.log('Check exist', check.exist);
         if (!check.exist) {
             return res.status(200).json({
                 message: 'Chưa có sản phẩm để thanh toán'
@@ -80,7 +78,7 @@ let getCart = async (req, res) => {
         }
 
         let listProduct = await selectAccount(id_account)
-        console.log('>>>> Check list: ', listProduct);
+        console.log('>>>> Check list: ', listProduct[0]);
         let totalPrice = 0;
 
         for (let i in listProduct) {
@@ -92,13 +90,10 @@ let getCart = async (req, res) => {
             total: totalPrice
         })
     }
-    catch (e) {
+    catch (err) {
         console.log(err);
         return res.sendStatus(500)
     }
-    // return res.status(200).json({
-    //     message: 'OK'
-    // })
 }
 ///////////////////////////////////////
 
@@ -106,16 +101,16 @@ let getCart = async (req, res) => {
 let hasProductAccount = (id_account, id_product) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let check = {}
+            //let check = {}
             let [data] = await pool.execute('select * from cart where id_account= ? and id_product=?', [id_account, id_product])
-            let [rowCount] = await pool.execute('select count(*) as count from cart where id_account= ? and id_product=?', [id_account, id_product])
-            //console.log('>>>check row count', rowCount[0].count);
-            check.exist = rowCount[0].count > 0
-            check.result = { ...data[0] }
-            //console.log(check);
-            resolve(
-                check
-            )
+            let result = { ...data[0] }
+            if (!data[0]) {
+                resolve(false)
+            }
+            else {
+                console.log('>>> Check data[0]: ', result);
+                resolve(result)
+            }
         }
         catch (err) {
             reject(err)
@@ -151,35 +146,33 @@ let addCart = (id_account, id_product, quantity) => {
 
 let addProduct = async (req, res) => {
     try {
-        let id_product = req.params.id_product
+        let { id_product } = req.params
         let quantity = Number(req.body.quantity)
         let id_account = auth.tokenData(req).id_account
 
         if (quantity < 1) {
             return res.json({
-                message: 'Sai'
+                message: 'Số lượng phải lớn hơn 0'
             })
         }
 
         if (!quantity) {
             quantity = 1
         }
+
+        //Check xem sản phẩm muốn thêm có trong giỏ hàng chưa
         let check = await hasProductAccount(id_account, id_product)
 
-        // console.log('a: ', check.exist);
-        console.log('b: ', check.result);
-        //console.log('b: ', result);
-        if (check.exist) {
-            let id_cart = check.result.id_cart
-            console.log('Id cart: ', id_cart);
-            let add = await addQuantity(id_cart, quantity)
-            return res.json({
-                message: 'Thêm thành công'
+        if (!check) {
+            let add = await addCart(id_account, id_product, quantity)
+            return res.status(200).json({
+                message: 'Thêm vào giỏ hàng thành công'
             })
         } else {
-            let add = await addCart(id_account, id_product, quantity)
-            return res.json({
-                message: 'Thêm vào giỏ hàng thành công'
+            let id_cart = check.id_cart
+            let add = await addQuantity(id_cart, quantity)
+            return res.status(200).json({
+                message: 'Thêm thành công'
             })
         }
     } catch (error) {

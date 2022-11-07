@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 
 let mail = {}
+
 let transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -14,7 +15,7 @@ mail.sendVerification = (userEmail, verification) => {
         from: 'huynhthanhphong12a1',
         to: userEmail,
         subject: 'Xin lại mật khẩu',
-        text: 'Mã xác nhận của mày là: ' + verification,
+        text: 'Mã xác nhận của bạn là: ' + verification,
     };
     transporter.sendMail(mailOptions)
 }

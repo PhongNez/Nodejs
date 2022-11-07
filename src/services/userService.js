@@ -6,14 +6,15 @@ let handleUserLogin = (email, password) => {
     return new Promise(async (resolve, reject) => {
         try {
             let userData = {}
+
             //check email tồn tại
             let isExist = await checkUserEmail(email)
 
             if (isExist) {
-                // const [data, fieldsData] = await pool.execute('SELECT id,fullName,email,address,phoneNumber FROM users_test where email=?', [email])
                 const [rows] = await pool.execute('SELECT * FROM account where email=?', [email])
-                //compare password
                 // console.log('>>>CHeck', password, rows[0].password);
+
+                //So sánh password
                 let check = bcrypt.compareSync(password, rows[0].password)
 
                 if (check) {
@@ -23,7 +24,7 @@ let handleUserLogin = (email, password) => {
                     userData.errMess = 'Đăng nhập thành công';
                     // delete user.password;
                     delete data['password']// bỏ cái password nhạy cảm
-                    userData.user = createJWTTest(data)
+                    userData.user = createJWTTest(data)//đổi dữ liệu ng dùng thành tokten
                     //userData.user = createJWTTest(data)
                     // console.log(userData.user);
                 }
@@ -35,7 +36,6 @@ let handleUserLogin = (email, password) => {
             else {
                 userData.errCode = 1
                 userData.errMess = 'Tên đăng nhập không tồn tại'
-
             }
             resolve(userData)
         } catch (error) {
@@ -62,6 +62,7 @@ let checkUserEmail = (userEmail) => {
         }
     })
 }
+
 module.exports = {
     handleUserLogin,
     checkUserEmail

@@ -1,82 +1,7 @@
 import { verify } from "jsonwebtoken";
 import pool from "../configs/connectDatabse"
 import userService from "../services/userService"
-let getAllUsers = async (req, res) => {
-    const [rows, fields] = await pool.execute('SELECT * FROM users');
-    return res.status(200).json({
-        message: 'OK',
-        dataUsers: rows
-    })
-}
 
-let createNewUsers = async (req, res) => {
-
-    let { firstName, lastName, email, address } = req.body
-
-    //bắt lỗi trống thông tin
-    if (!firstName || !lastName || !email || !address) {
-        return res.status(200).json({
-            message: "Thất bại mịa rồi"
-        })
-    }
-
-    //thực thi lênh sql
-    await pool.execute('insert into users (firstname,lastname,email,address) values (?,?,?,?)', [firstName, lastName, email, address])
-    return res.status(200).json({
-        message: "Chúc mừng đã thêm thành công"
-    })
-}
-
-let updateUser = async (req, res) => {
-
-    let { firstName, lastName, email, address, id } = req.body
-
-    if (!firstName || !lastName || !email || !address || !id) {
-        return res.status(200).json({
-            message: "Thất bại mịa rồi"
-        })
-    }
-
-
-    await pool.execute('update users set firstname=?,lastname=?,email=?,address=? where id=?', [firstName, lastName, email, address, id])
-
-    return res.status(200).json({
-        message: "Chúc mừng đã cập nhật thành công"
-    })
-}
-
-let deleteUser = async (req, res) => {
-    let userId = req.params.id// id trùng tên với id đường dẫn
-
-    if (!userId) {
-        return res.status(200).json({
-            message: "Thất bại mịa rồi"
-        })
-    }
-
-
-
-    await pool.execute(`delete from users where id=?`, [userId])
-
-    return res.status(200).json({
-        message: "Chúc mừng đã xóa thành công"
-    })
-}
-
-let getOneUser = async (req, res) => {
-    let userId = req.params.id
-    if (!userId) {
-        return res.status(200).json({
-            message: "Thất bại mịa rồi"
-        })
-    }
-    const [rows, fields] = await pool.execute('SELECT * FROM users where id=?', [userId]);
-
-    return res.status(200).json({
-        message: 'OK',
-        dataUsers: rows
-    })
-}
 
 //API login
 let handleLogin = async (req, res) => {
@@ -88,6 +13,7 @@ let handleLogin = async (req, res) => {
         })
     }
 
+    //Trả về dữ liệu người dùng
     let userData = await userService.handleUserLogin(email, password)
     return res.status(200).json({
         // errorCode: 0,
@@ -125,7 +51,7 @@ let createNewProduct = async (req, res) => {
     }
 
     //thực thi lênh sql
-    await pool.execute('insert into product (id_category,name, detail, price, images, type, status) values (?,?,?,?,?,?,?)', [id_category, name, detail, price, images, type, status])
+    let insert = await pool.execute('insert into product (id_category,name, detail, price, images, type, status) values (?,?,?,?,?,?,?)', [id_category, name, detail, price, images, type, status])
     return res.status(200).json({
         message: "Chúc mừng đã thêm thành công"
     })
@@ -135,7 +61,7 @@ let createNewProduct = async (req, res) => {
 let updateProduct = async (req, res) => {
 
     let { name, detail, price, images, type, status, id_category } = req.body
-    let id_product = req.params.id_product
+    let { id_product } = req.params
 
     if (!name || !detail || !price || !images || !id_category || !id_product) {
         return res.status(200).json({
@@ -143,7 +69,7 @@ let updateProduct = async (req, res) => {
         })
     }
 
-    await pool.execute
+    let update = await pool.execute
         ('update product set name=?,detail=?,price=?,images=?, type=?, status=?,id_category=? where id_product=?',
             [name, detail, price, images, type, status, id_category, id_product])
 
@@ -154,27 +80,24 @@ let updateProduct = async (req, res) => {
 }
 
 let deleteProduct = async (req, res) => {
-    let id_product = req.params.id_product// id trùng tên với id đường dẫn
+    let { id_product } = req.params// id trùng tên với id đường dẫn
 
     if (!id_product) {
         return res.status(200).json({
-            message: "Thất bại mịa rồi"
+            message: "Thất bại rồi"
         })
     }
 
-    await pool.execute(`delete from product where id_product=?`, [id_product])
+    let del = await pool.execute(`delete from product where id_product=?`, [id_product])
 
     return res.status(200).json({
         message: "Chúc mừng đã xóa thành công"
     })
 }
 
+
+
 module.exports = {
-    getAllUsers,
-    createNewUsers,
-    updateUser,
-    deleteUser,
-    getOneUser,
     handleLogin,
     getProduct,
     createNewProduct,

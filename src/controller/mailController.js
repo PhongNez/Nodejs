@@ -1,10 +1,11 @@
 import pool from "../configs/connectDatabse"
 import userService from "../services/userService"
 import mail from "../services/mail"
-import userController from "./UserController"
+import UserController from "./UserController"
 import bcrypt from 'bcryptjs';
 import { createJWTTest } from "../middleware/JWTAction"
-let getIdAccountEmail = (email) => {
+
+let getIdAccountOfEmail = (email) => {
     return new Promise(async (resolve, reject) => {
         try {
             let [id_account] = await pool.execute('select id_account from account where email=?', [email])
@@ -38,10 +39,16 @@ let insertVerification = (id_account, code) => {
 
 
 
-let deleteCode = async (id_verification) => {
-    //let del = Verification.delete(id_verification);
-    let del = await pool.execute('delete from verification where id_verification=?', [id_verification])
-    return del
+let deleteCode = (id_verification) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let del = await pool.execute('delete from verification where id_verification=?', [id_verification])
+            resolve(del)
+        } catch (err) {
+            reject(err)
+        }
+
+    })
 }
 
 let autoDeleteCode = (id_verification) => {
@@ -50,28 +57,34 @@ let autoDeleteCode = (id_verification) => {
 
 let forgotPassword = async (req, res) => {
     try {
-        let email = req.body.email
+        let { email } = req.body
 
         if (!email) {
             return res.status(401).json({
-                message: 'Vui lòng nhập email'
+                message: 'Vui lòng nhập email!'
             })
         }
 
         let exist = await userService.checkUserEmail(email)
         console.log('>>>Check exist: ', exist);
+
         if (exist) {
+            //Tạo 1 mã code gồm 6 số
             let code = mail.createCode()
 
-            let id_account = await getIdAccountEmail(email)
+            //Lấy id_account của email
+            let id_account = await getIdAccountOfEmail(email)
             console.log('>>>>Check id_Account: ', id_account);
-            let sendEmail = mail.sendVerification(email, code)
+            //Gửi mail đi
+            mail.sendVerification(email, code)
 
-            code = await userController.hashUserPassword(code)
+            code = await UserController.hashUserPassword(code)
             console.log('>>>>>>>>>>>>>>>Check code :', code);
+
             let id_verification = await insertVerification(id_account, code)
             // console.log(id_verification);
-            let del = autoDeleteCode(id_verification)
+            //Xóa mã code trong db
+            autoDeleteCode(id_verification)
         }
         return res.status(200).json({
             message: 'Thành công'
@@ -104,7 +117,14 @@ let checkVerification = (id_account) => {
     return new Promise(async (resolve, reject) => {
         try {
             let [exist] = await pool.execute('select * from verification where id_account=?', [id_account])
-            resolve(exist[0].code)
+            console.log('Test !exist: ', !exist[0]);
+            console.log('Test exist:', exist[0]);
+            if (!exist[0]) {//undefined !undefined =>true true
+                resolve(false)
+            }
+            else {
+                resolve(exist[0].code)
+            }
         } catch (error) {
             console.log(error);
             reject(error)
@@ -114,8 +134,8 @@ let checkVerification = (id_account) => {
 
 let confirm = async (req, res) => {
     try {
-        let code = req.body.code
-        let id_account = req.params.id_account
+        let { code } = req.body
+        let { id_account } = req.params
 
         if (!code || !id_account) {
             return res.status(200).json({
@@ -123,15 +143,13 @@ let confirm = async (req, res) => {
             })
         }
 
-        let exist = await checkVerification(id_account)
-        console.log(exist);
+        //Kiểm tra tồn tại mã xác nhận
+        let exist = await checkVerification(id_account, code)
         if (!exist) {
             return res.status(200).json({
-                message: 'Mã xác minh sai hoặc hết hiệu lực'
+                message: 'Mã xác minh hết hiệu lực'
             })
         } else {
-            console.log('>>>>>>>>Check exist:  ', exist);
-
             let checkPassword = bcrypt.compareSync(code, exist)
             console.log('>>>>>>>>Check password:  ', checkPassword);
             if (checkPassword) {

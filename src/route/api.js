@@ -2,29 +2,31 @@ import express from "express";
 
 import APIController from "../controller/APIController"
 import UserController from "../controller/UserController"
-import cartController from '../controller/cartController'
-import mailController from "../controller/mailController"
-import orderController from "../controller/orderController"
+import CartController from '../controller/CartController'
+import MailController from "../controller/MailController"
+import OrderController from "../controller/OrderController"
 let router = express.Router();
 
 import auth from '../middleware/auth'
 
 const initAPIRoute = (app) => {
-    router.get('/users', APIController.getAllUsers);
-    router.post('/create-user', APIController.createNewUsers);
-    router.put('/update-user', APIController.updateUser)//method: put
-    router.delete('/delete-user/:id', APIController.deleteUser)
-    //get 1 user
-    router.get('/users/:id', APIController.getOneUser)
+
+    //Đăng ký tài khoản
+    router.post('/account/signup', UserController.createNewUser)
 
     //login
     router.post('/login', APIController.handleLogin)
-    //băm password
-    router.post('/hashpassword', UserController.createNewUser_hash)
 
-    router.post('/test', UserController.findOneUser)
+    //Đổi mật khẩu
+    router.post('/changepassword', UserController.changePassword)
 
-    //Sản phẩm
+    //Quên mật khẩu 
+    router.post('/forgot-password', MailController.forgotPassword)
+
+    //Xác nhận mã xác minh
+    router.post('/confirm/:id_account', MailController.confirm)
+
+    //Trả về toàn bộ sản phẩm
     router.get('/product', APIController.getProduct)
 
     //Thêm sản phẩm
@@ -36,35 +38,32 @@ const initAPIRoute = (app) => {
     //Xóa sản phẩm
     router.delete('/deleteProduct/:id_product', APIController.deleteProduct)
 
-    //Xem danh sách giỏ hàng
-    router.post('/account', auth.authenUser, cartController.getCart)
-
     //Thêm vào giỏ hàng
-    router.post('/product/:id_product', auth.authenUser, cartController.addProduct)
+    router.post('/product/:id_product', auth.authenUser, CartController.addProduct)
 
     //Xóa sản phẩm trong giỏ hàng
-    router.delete('/product/:id_product', auth.authenUser, cartController.deleteProductFromCart)
+    router.delete('/product/:id_product', auth.authenUser, CartController.deleteProductFromCart)
 
-    //Tạo tài khoản
-    router.post('/account/signup', UserController.createNewUser)
-
-    //Đổi mật khẩu
-    router.post('/changepassword', UserController.changePassword)
-
-    //Quên mật khẩu 
-    router.post('/forgot-password', mailController.forgotPassword)
-
-    //Xác nhận mã xác minh
-    router.post('/confirm/:id_account', mailController.confirm)
+    //Xem danh sách sản phẩm trong giỏ hàng
+    router.post('/account', auth.authenUser, CartController.getCart)
 
     //Xem đon đặt hàng
-    router.get('/order', auth.authenUser, orderController.getOrder)
+    router.get('/order', auth.authenUser, OrderController.getOrder)
 
     //Xem chi tiết đơn đặt hàng
-    router.get('/detailOrder', orderController.getDetailOrder)
+    router.get('/detailOrder/:id_order', OrderController.getDetailOrder)
 
     //Thanh toán 
-    router.post('/pay', auth.authenUser, cartController.pay)
+    router.post('/pay', auth.authenUser, CartController.pay)
+
+    //Sửa thông tin cá nhân 
+    router.post('/modified/:id_account', auth.authenUser, UserController.updateInfo)
+
+    router.get('/search', UserController.searchProduct)
+
+    //---------------Admin----------------------------
+    //Lấy tất cả danh sách tài khoản khách hàng
+    router.post('/admin/account', auth.authenAdmin, UserController.listAccount)
     return app.use('/api/v1/', router)
 }
 
