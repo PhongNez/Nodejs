@@ -4,6 +4,7 @@ import userService from "../services/userService"
 import auth from "../middleware/auth"
 const salt = bcrypt.genSaltSync(10);
 
+
 let hashUserPassword = (password) => {
     return new Promise((resolve, reject) => {
 
@@ -18,11 +19,12 @@ let hashUserPassword = (password) => {
 
 //Đăng ký tài khoản
 let createNewUser = async (req, res) => {
-    let { email, password } = req.body
-
+    let { email, password, name, phone, address } = req.body
+    let avatar = req.file.filename
     //bắt lỗi trống thông tin
     if (!email && !password) {
-        return res.status(200).json({
+        return res.status(400).json({
+            errCode: 1,
             message: "Tài khoản hoặc mật khẩu bị bỏ trống"
         })
     }
@@ -34,15 +36,17 @@ let createNewUser = async (req, res) => {
         //băm cái mật khẩu ra trăm mảnh
         let hashPasswordFromBcrypt = await hashUserPassword(password)
         //thực thi lênh sql
-        await pool.execute('insert into account (email,password) values (?,?)', [email, hashPasswordFromBcrypt])
+        await pool.execute('insert into account (email,password,name,address,phone,avatar) values (?,?,?,?,?,?)', [email, hashPasswordFromBcrypt, name, address, phone, avatar])
         // console.log(hashPasswordFromBcrypt);
         return res.status(200).json({
+            errCode: 0,
             message: "Thành công",
             password: hashPasswordFromBcrypt
         })
     }
     else {
-        return res.status(200).json({
+        return res.status(400).json({
+            errCode: 2,
             message: "Email đã được đăng ký"
         })
     }
@@ -139,9 +143,7 @@ let getListAccount = () => {
 let listAccount = async (req, res) => {
     try {
         let list = await getListAccount()
-        return res.status(200).json({
-            message: list
-        })
+        return res.status(200).json({ listAccount: list })
     } catch (err) {
         console.log(err);
     }
@@ -149,8 +151,10 @@ let listAccount = async (req, res) => {
 
 let searchProduct = async (req, res) => {
     try {
+        console.log('Xin chào');
         let { name } = req.body
-        let [search] = await pool.execute("select * from product where name like ?", [name + '%'])
+        console.log("body", name);
+        let [search] = await pool.execute("select * from product where name like ?", ['%' + name + '%'])
         return res.status(200).json({
             message: search
         })
@@ -159,11 +163,39 @@ let searchProduct = async (req, res) => {
     }
 }
 
+// let checkInfo =async () =>{
+//     return new Promise((resolve,reject) =>{
+//         try {
+//             let [info] = await pool.execute('select * from account where id_account=?', [auth.tokenData(req).id_account])
+//         } catch (e) {
+//             reject(e)
+//         }
+//     })
+// }
+
+let getInfo = async (req, res) => {
+    try {
+        let [info] = await pool.execute('select * from account where id_account=?', [auth.tokenData(req).id_account])
+        if (info) {
+            return res.status(200).json({
+                userInfo: info[0]
+            })
+        }
+        else {
+            return res.status(400).json({
+                message: 'không thành công'
+            })
+        }
+    } catch (err) {
+        console.log(err);
+    }
+}
 module.exports = {
     createNewUser,
     changePassword,
     hashUserPassword,
     updateInfo,
     listAccount,
-    searchProduct
+    searchProduct,
+    getInfo
 }

@@ -149,7 +149,7 @@ let addProduct = async (req, res) => {
         let { id_product } = req.params
         let quantity = Number(req.body.quantity)
         let id_account = auth.tokenData(req).id_account
-
+        console.log('Test body: ', id_product, quantity, id_account);
         if (quantity < 1) {
             return res.json({
                 message: 'Số lượng phải lớn hơn 0'
@@ -238,9 +238,23 @@ let deleteProductFromCart = async (req, res) => {
         return res.sendStatus(500)
     }
 }
+
+let addCategory = (name, logo) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let add = await pool.execute('insert into category (name, logo) values (?,?)',
+                [name, logo])
+            //console.log('Check addCart: ', add);
+            resolve(add)
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
 module.exports = {
     getCart,
     addProduct,
     deleteProductFromCart,
-    pay
+    pay,
+    addCategory
 }

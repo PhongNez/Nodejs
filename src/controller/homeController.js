@@ -30,7 +30,8 @@ let getHomepage = async (req, res) => {
 
     const [rows, fields] = await pool.execute('SELECT * FROM `product`');
     // console.log(typeof (data), JSON.stringify(data));
-    return res.render('index.ejs', { dataUser: rows })
+    // return res.render('index.ejs', { dataUser: rows })
+    res.render('account.ejs')
 
 }
 

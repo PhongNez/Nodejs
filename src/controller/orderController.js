@@ -8,8 +8,6 @@ import auth from "../middleware/auth"
 let insertOrder = (id_account) => {
     return new Promise(async (resolve, reject) => {
         try {
-
-
             let order = await pool.execute('insert into orders(id_account,status) values(?,1)', [id_account])
             let [check] = await pool.execute('SELECT * FROM orders ORDER BY id_order DESC LIMIT 1')
             if (check[0].id_account != id_account) {
@@ -24,6 +22,7 @@ let insertOrder = (id_account) => {
         }
     })
 }
+
 let listDetailOrder = (id_order, id_account) => {
     return new Promise(async (resolve, reject) => {
         try {

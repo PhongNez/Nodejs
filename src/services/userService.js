@@ -21,7 +21,7 @@ let handleUserLogin = (email, password) => {
                     let data = { ...rows[0] }//lấy object
                     //let data = rows[0]
                     userData.errCode = 0;
-                    userData.errMess = 'Đăng nhập thành công';
+                    userData.message = 'Đăng nhập thành công';
                     // delete user.password;
                     delete data['password']// bỏ cái password nhạy cảm
                     userData.user = createJWTTest(data)//đổi dữ liệu ng dùng thành tokten
@@ -30,7 +30,7 @@ let handleUserLogin = (email, password) => {
                 }
                 else {
                     userData.errCode = 2;
-                    userData.errMess = 'Sai mật khẩu.Vui lòng kiểm tra lại'
+                    userData.message = 'Sai mật khẩu.Vui lòng kiểm tra lại'
                 }
             }
             else {
@@ -62,6 +62,7 @@ let checkUserEmail = (userEmail) => {
         }
     })
 }
+
 
 module.exports = {
     handleUserLogin,
