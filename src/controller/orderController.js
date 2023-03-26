@@ -160,12 +160,62 @@ let getDetailOrder = async (req, res) => {
 
     return res.status(200).json({
         // detailOrder: details
-        detail: details
+        listOrderDetail: details
     })
 }
 
+let getOrderNew = async (req, res) => {
+    try {
+        let [order] = await pool.execute('SELECT * from account a,orders o where a.id_account=o.id_account')
+        return res.status(200).json({
+            listOrder: order
+        })
+    } catch (e) {
+        console.log(e);
+    }
 
+}
+
+let xacNhanDonHang = (req, res) => {
+    try {
+        let id_order = req.params.id_order;
+        let update = pool.execute('UPDATE orders SET status = 2 WHERE id_order = ?', [id_order])
+        return res.status(200).json({
+            message: 'Đã xác nhận đơn hàng'
+        })
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+let hoanThanhDonHang = (req, res) => {
+    try {
+        let id_order = req.params.id_order;
+        let update = pool.execute('UPDATE orders SET status = 0 WHERE id_order = ?', [id_order])
+        return res.status(200).json({
+            message: 'Đơn hàng đã hoàn thành'
+        })
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+let huyDonHang = (req, res) => {
+    try {
+        let id_order = req.params.id_order;
+        let update = pool.execute('UPDATE orders SET status = 3 WHERE id_order = ?', [id_order])
+        return res.status(200).json({
+            message: 'Đơn hàng đã được hủy'
+        })
+    } catch (e) {
+        console.log(e);
+    }
+}
 module.exports = {
     getOrder,
-    getDetailOrder
+    getDetailOrder,
+    getOrderNew,
+    xacNhanDonHang,
+    hoanThanhDonHang,
+    huyDonHang
 }

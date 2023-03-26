@@ -25,11 +25,10 @@ const storageMobile = multer.diskStorage({
 });
 
 const uploadMobile = multer({
-    storage: storageMobile
+    storage: storage
 })
 const initAPIRoute = (app) => {
 
-    router.post('/admin/createcategory', uploadMobile.single('logo'), APIController.createNewCategory)
 
     router.get('/account/info', UserController.getInfo)
     //Đăng ký tài khoản
@@ -47,21 +46,6 @@ const initAPIRoute = (app) => {
     //Xác nhận mã xác minh
     router.post('/confirm/:id_account', MailController.confirm)
 
-    //Danh sách danh mục
-    router.get('/category?:id', APIController.getCategory)
-
-    //Trả về toàn bộ sản phẩm
-    router.get('/product', APIController.getProduct)
-
-    //Thêm sản phẩm
-    router.post('/createNewProduct', upload.single('images'), APIController.createNewProduct)
-
-    //update sản phẩm
-    router.put('/updateProduct/:id_product', APIController.updateProduct)
-
-    //Xóa sản phẩm
-    router.delete('/deleteProduct/:id_product', APIController.deleteProduct)
-
     //Thêm vào giỏ hàng
     router.post('/product/:id_product', auth.authenUser, CartController.addProduct)
 
@@ -75,7 +59,7 @@ const initAPIRoute = (app) => {
     router.get('/order', auth.authenUser, OrderController.getOrder)
 
     //Xem chi tiết đơn đặt hàng
-    router.get('/detailOrder/:id_order', OrderController.getDetailOrder)
+    router.get('/admin/detailorder/:id_order', OrderController.getDetailOrder)
 
     //Thanh toán 
     router.post('/pay', auth.authenUser, CartController.pay)
@@ -88,10 +72,32 @@ const initAPIRoute = (app) => {
     //---------------Admin----------------------------
     //Lấy tất cả danh sách tài khoản khách hàng
     router.get('/admin/account', auth.authenAdmin, UserController.listAccount)
-    router.post('/admin/category', auth.authenAdmin, APIController.createNewCategory)
-    router.get('/admin/getcategory', auth.authenAdmin, APIController.getCategory)
-    router.get('/detailProduct', APIController.getDetailProduct)
-    router.post('/admin/createNewProduct', auth.authenAdmin, APIController.createNewProduct)
+    router.get('/chiTiet?:id', APIController.getDetail_1_Product)
+
+    //Sản phẩm
+    router.get('/admin/product?:id', APIController.getDetailProduct)
+    router.post('/admin/createNewProduct', upload.single('images'), auth.authenAdmin, APIController.createNewProduct)
+    router.post('/admin/updateProduct/:id_product/:id_category', upload.single('images'), auth.authenAdmin, APIController.updateProduct)
+    router.delete('/admin/deleteProduct/:id_product', auth.authenAdmin, APIController.deleteProduct)
+
+    //Danh mục
+    router.get('/category?:id', APIController.getCategory)
+    router.post('/admin/createcategory', auth.authenAdmin, upload.single('logo'), APIController.createNewCategory)
+    router.post('/admin/updateCategory?:id', auth.authenAdmin, upload.single('logo'), APIController.updateCategory)
+    router.delete('/admin/deleteCategory?:id_category', auth.authenAdmin, APIController.deleteCategory)
+
+    //Đơn hàng
+    router.get('/admin/getorders', auth.authenAdmin, OrderController.getOrderNew)
+    router.post('/admin/xacnhandonhang/:id_order', OrderController.xacNhanDonHang)
+    router.post('/admin/hoanthanhdonhang/:id_order', OrderController.hoanThanhDonHang)
+    router.post('/admin/huydonhang/:id_order', OrderController.huyDonHang)
+
+    //Đăng nhập của admin
+    router.post('/admin/login', APIController.handleAdminLogin)
+    // router.get('/admin/deleteProduct/:id_product', (req) => {
+    //     console.log('Hello');
+    // }
+    // )
     return app.use('/api/v1/', router)
 }
 
