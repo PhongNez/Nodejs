@@ -154,7 +154,21 @@ let searchProduct = async (req, res) => {
         console.log('Xin chào');
         let { name } = req.body
         console.log("body", name);
-        let [search] = await pool.execute("select * from product where name like ?", ['%' + name + '%'])
+        let [search] = await pool.execute("select *,p.name as name_product from product p,category c where p.id_category=c.id_category and p.name like ?", ['%' + name + '%'])
+        return res.status(200).json({
+            message: search
+        })
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+let searchCategory = async (req, res) => {
+    try {
+        console.log('Xin chào');
+        let { name } = req.body
+        console.log("body", name);
+        let [search] = await pool.execute("select * from category where name like ?", ['%' + name + '%'])
         return res.status(200).json({
             message: search
         })
@@ -197,5 +211,6 @@ module.exports = {
     updateInfo,
     listAccount,
     searchProduct,
-    getInfo
+    getInfo,
+    searchCategory
 }

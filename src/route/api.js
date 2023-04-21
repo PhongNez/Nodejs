@@ -58,9 +58,6 @@ const initAPIRoute = (app) => {
     //Xem đon đặt hàng
     router.get('/order', auth.authenUser, OrderController.getOrder)
 
-    //Xem chi tiết đơn đặt hàng
-    router.get('/admin/detailorder/:id_order', OrderController.getDetailOrder)
-
     //Thanh toán 
     router.post('/pay', auth.authenUser, CartController.pay)
 
@@ -69,35 +66,48 @@ const initAPIRoute = (app) => {
 
     router.post('/search', UserController.searchProduct)
 
+    router.post('/search-category', UserController.searchCategory)
     //---------------Admin----------------------------
     //Lấy tất cả danh sách tài khoản khách hàng
     router.get('/admin/account', auth.authenAdmin, UserController.listAccount)
-    router.get('/chiTiet?:id', APIController.getDetail_1_Product)
+
+    //Xem chi tiết sản phẩm theo id_product
+    router.get('/chitiet?:id', APIController.getDetail_1_Product)
 
     //Sản phẩm
-    router.get('/admin/product?:id', APIController.getDetailProduct)
+    router.get('/admin/product?:id', APIController.getDetailProduct)// lấy tất cả sản phẩm theo danh mục
     router.post('/admin/createNewProduct', upload.single('images'), auth.authenAdmin, APIController.createNewProduct)
     router.post('/admin/updateProduct/:id_product/:id_category', upload.single('images'), auth.authenAdmin, APIController.updateProduct)
     router.delete('/admin/deleteProduct/:id_product', auth.authenAdmin, APIController.deleteProduct)
 
     //Danh mục
+    router.get('/testthu', APIController.getCategoryPhong)
     router.get('/category?:id', APIController.getCategory)
     router.post('/admin/createcategory', auth.authenAdmin, upload.single('logo'), APIController.createNewCategory)
     router.post('/admin/updateCategory?:id', auth.authenAdmin, upload.single('logo'), APIController.updateCategory)
     router.delete('/admin/deleteCategory?:id_category', auth.authenAdmin, APIController.deleteCategory)
 
     //Đơn hàng
+    router.get('/testthu-product', APIController.getProductPhong)
     router.get('/admin/getorders', auth.authenAdmin, OrderController.getOrderNew)
+    router.get('/admin/detailorder/:id_order', OrderController.getDetailOrder)
     router.post('/admin/xacnhandonhang/:id_order', OrderController.xacNhanDonHang)
     router.post('/admin/hoanthanhdonhang/:id_order', OrderController.hoanThanhDonHang)
     router.post('/admin/huydonhang/:id_order', OrderController.huyDonHang)
 
     //Đăng nhập của admin
     router.post('/admin/login', APIController.handleAdminLogin)
+
+    //Doanh số
+    router.get('/admin/doanhso', OrderController.xemDoanhSo)
     // router.get('/admin/deleteProduct/:id_product', (req) => {
     //     console.log('Hello');
     // }
     // )
+
+    //APi đánh giá năng lực
+    router.get('/account/xemDanhGia?:id_product', APIController.getRated)
+    router.post('/account/rating', APIController.rateComment)
     return app.use('/api/v1/', router)
 }
 

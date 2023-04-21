@@ -1,8 +1,7 @@
 import { verify } from "jsonwebtoken";
 import pool from "../configs/connectDatabse"
 import userService from "../services/userService"
-
-
+import auth from "../middleware/auth"
 //API login
 let handleLogin = async (req, res) => {
     let { email, password } = req.body
@@ -205,7 +204,7 @@ let getDetailProduct = async (req, res) => {
             [response] = await pool.execute('select *,p.name as name_product from product p,category c where p.id_category=c.id_category')
         }
         else {
-            [response] = await pool.execute('select * from product where id_category=?', [id])
+            [response] = await pool.execute('select *,p.name as name_product from product p,category c where p.id_category=? and p.id_category=c.id_category', [id])
         }
         console.log(response);
         return res.status(200).json(
@@ -294,7 +293,133 @@ let deleteCategory = async (req, res) => {
     })
 }
 
+let rateComment = async (req, res) => {
+    try {
+        let { id_product, star, comment } = req.body
+        let id_account = auth.tokenData(req).id_account
+        console.log('id_product:', id_product, 'star', star, 'omment', comment);
+        console.log('id_account:', id_account);
+        let check = await checkTonTaiDanhGia(id_product, id_account);
+        console.log(check);
+        if (!check) {
 
+
+            let insert = await pool.execute('insert into rated(id_product,id_account,star,comment,status) values(?,?,?,?,0)', [id_product, id_account, star, comment])
+
+            return res.status(200).json({
+                // insert: insert,
+                message: 'Chúc mừng đã thêm thành công'
+            })
+        }
+        else {
+            console.log(check);
+            return res.status(200).json({
+                // insert: insert,
+                message: 'Đã bình luận'
+            })
+        }
+
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+
+let checkTonTaiDanhGia = async (id_product, id_account) => {
+    try {
+
+        let [check] = await pool.execute('select * from rated where id_product=? and id_account=?', [id_product, id_account])
+        console.log(check[0]);
+        if (!check[0]) {
+            return false
+        } else {
+            return true
+        }
+
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+let getRated = async (req, res) => {
+    try {
+        let { id_product } = req.query
+
+        // let insert = await pool.execute('insert into rated(id_product,id_account,star,comment,status) values(?,?,?,?,0)', [id_product, id_account, star, comment])
+        let [listRated] = await pool.execute('SELECT * FROM rated r ,account a where id_product=? and r.id_account=a.id_account', [id_product])
+
+        return res.status(200).json({
+            // insert: insert,
+            listRated: listRated
+        })
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+let getCategoryPhong = async (req, res) => {
+    //thực thi lênh sql
+    try {
+        let page = req.query.page;//Trang mấy
+        let page_size = 3
+        page = parseInt(page)
+        let soLuongBoQua = (page - 1) * page_size
+
+        console.log("id query: ", page, "So luong bo qua:", soLuongBoQua);
+        let response = '';
+        if (!page) {
+            [response] = await pool.execute('select * from category');
+
+        }
+        else {
+            [response] = await pool.execute('select * from category');
+            console.log(response);
+            response = response.slice(soLuongBoQua, page_size + soLuongBoQua)
+        }
+        // response = response.slice(4, 5)
+        return res.status(200).json(
+            {
+                listCategory: response,
+                page_size: page_size
+            }
+        )
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+let getProductPhong = async (req, res) => {
+    //thực thi lênh sql
+    try {
+        let page = req.query.page;//Trang mấy
+        let page_size = 3
+        page = parseInt(page)
+        let soLuongBoQua = (page - 1) * page_size
+
+        console.log("id query: ", page, "So luong bo qua:", soLuongBoQua);
+        let response = '';
+        if (!page) {
+            [response] = await pool.execute('select *,p.name as name_product from product p,category c where p.id_category=c.id_category');
+
+        }
+        else {
+            [response] = await pool.execute('select *,p.name as name_product from product p,category c where p.id_category=c.id_category');
+            console.log(response);
+            response = response.slice(soLuongBoQua, page_size + soLuongBoQua)
+        }
+        // response = response.slice(4, 5)
+        return res.status(200).json(
+            {
+                listProduct: response,
+                page_size: page_size
+            }
+        )
+    } catch (error) {
+        console.log(error);
+    }
+
+
+}
 module.exports = {
     handleLogin,
     getProduct,
@@ -307,5 +432,9 @@ module.exports = {
     getDetail_1_Product,
     updateCategory,
     deleteCategory,
-    handleAdminLogin
+    handleAdminLogin,
+    rateComment,
+    getRated,
+    getCategoryPhong,
+    getProductPhong
 } 

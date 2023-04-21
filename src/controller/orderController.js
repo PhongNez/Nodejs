@@ -157,10 +157,15 @@ let getDetailOrder = async (req, res) => {
     let { id_order } = req.params
     //let details = await detail(id_order)
     let details = await detail(id_order)
-
+    console.log(details);
+    let total = 0
+    details.map((item, index) => {
+        total += item.amount * item.price
+    })
+    console.log('tổng: ', total);
     return res.status(200).json({
         // detailOrder: details
-        listOrderDetail: details
+        listOrderDetail: details, total
     })
 }
 
@@ -188,11 +193,25 @@ let xacNhanDonHang = (req, res) => {
     }
 }
 
-let hoanThanhDonHang = (req, res) => {
+let hoanThanhDonHang = async (req, res) => {
     try {
-        let id_order = req.params.id_order;
+
+        //let id_account = auth.tokenData(req).id_account
+        let { id_order } = req.params
+        //let details = await detail(id_order)
+        let details = await detail(id_order)
+        console.log(details);
+        let total = 0
+        details.map((item, index) => {
+            total += item.amount * item.price
+        })
+        console.log('tổng: ', total);
+        //('insert into orders(id_account,status) values(?,1)', [id_account])
+        let updatedoanhthu = pool.execute('insert into doanhthu(id_order,total) values(?,?)', [id_order, total])
         let update = pool.execute('UPDATE orders SET status = 0 WHERE id_order = ?', [id_order])
         return res.status(200).json({
+            // detailOrder: details
+            total,
             message: 'Đơn hàng đã hoàn thành'
         })
     } catch (e) {
@@ -211,11 +230,24 @@ let huyDonHang = (req, res) => {
         console.log(e);
     }
 }
+
+let xemDoanhSo = async (req, res) => {
+    //let details = await detail(id_order)
+    console.log('HEllo');
+    // let [listDoanhSo] = await pool.execute('SELECT * FROM doanhthu d,orders o where d.id_order=o.id_order')
+    let [listDoanhSo] = await pool.execute('SELECT DATE(order_time) as ngay,sum(total) as total_doanhso FROM orders o,doanhthu d where o.id_order=d.id_order GROUP BY DATE(order_time)')
+    console.log(listDoanhSo);
+    return res.status(200).json({
+        // detailOrder: details
+        listDoanhSo: listDoanhSo
+    })
+}
 module.exports = {
     getOrder,
     getDetailOrder,
     getOrderNew,
     xacNhanDonHang,
     hoanThanhDonHang,
-    huyDonHang
+    huyDonHang,
+    xemDoanhSo
 }

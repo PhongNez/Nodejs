@@ -56,7 +56,7 @@ let selectAccount = (id_account) => {
     return new Promise(async (resolve, reject) => {
         try {
             let [data] = await pool.execute
-                ('select c.id_product,c.quantity,p.name,p.price,p.images from cart c,product p where c.id_account=? and c.id_product =p.id_product', [id_account])
+                ('select c.id_product,c.quantity,p.name,p.price,p.images,c.size from cart c,product p where c.id_account=? and c.id_product =p.id_product', [id_account])
             //console.log(data);
             resolve(data)
         } catch (error) {
@@ -98,11 +98,11 @@ let getCart = async (req, res) => {
 ///////////////////////////////////////
 
 //=================Thêm sản phẩm vô giỏ hàng
-let hasProductAccount = (id_account, id_product) => {
+let hasProductAccount = (id_account, id_product, size) => {
     return new Promise(async (resolve, reject) => {
         try {
             //let check = {}
-            let [data] = await pool.execute('select * from cart where id_account= ? and id_product=?', [id_account, id_product])
+            let [data] = await pool.execute('select * from cart where id_account= ? and id_product=? and size=?', [id_account, id_product, size])
             let result = { ...data[0] }
             if (!data[0]) {
                 resolve(false)
@@ -118,11 +118,11 @@ let hasProductAccount = (id_account, id_product) => {
     })
 }
 
-let addQuantity = (id_cart, quantity) => {
+let addQuantity = (id_cart, quantity, size) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let add = await pool.execute('update cart set quantity = quantity + ? where id_cart= ?',
-                [quantity, id_cart])
+            let add = await pool.execute('update cart set quantity = quantity + ? where id_cart= ? and size =?',
+                [quantity, id_cart, size])
             // console.log('Check addQuantity: ', add);
             resolve(add)
         } catch (error) {
@@ -131,11 +131,11 @@ let addQuantity = (id_cart, quantity) => {
     })
 }
 
-let addCart = (id_account, id_product, quantity) => {
+let addCart = (id_account, id_product, quantity, size) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let add = await pool.execute('insert into cart (id_account, id_product, quantity) values (?,?,?)',
-                [id_account, id_product, quantity])
+            let add = await pool.execute('insert into cart (id_account, id_product, quantity,size) values (?,?,?,?)',
+                [id_account, id_product, quantity, size])
             //console.log('Check addCart: ', add);
             resolve(add)
         } catch (error) {
@@ -144,12 +144,27 @@ let addCart = (id_account, id_product, quantity) => {
     })
 }
 
+
+/*Ví dụ:
+     Size S 360 ml 
+    Size M 500 ml
+    Size L 700ml
+    
+    Note lại ý tưởng:
+    Khi thêm sp vào cart:
+    Size bắt buộc
+    1. Check xem sp có trong cart chưa(Cùng size) 
+    2. Chưa cùng thì thêm 
+
+    */
 let addProduct = async (req, res) => {
     try {
         let { id_product } = req.params
         let quantity = Number(req.body.quantity)
         let id_account = auth.tokenData(req).id_account
-        console.log('Test body: ', id_product, quantity, id_account);
+
+        let size = req.body.size
+        console.log('Test body: ', id_product, quantity, id_account, 'Size: ', size);
         if (quantity < 1) {
             return res.json({
                 message: 'Số lượng phải lớn hơn 0'
@@ -161,10 +176,10 @@ let addProduct = async (req, res) => {
         }
 
         //Check xem sản phẩm muốn thêm có trong giỏ hàng chưa
-        let check = await hasProductAccount(id_account, id_product)
+        let check = await hasProductAccount(id_account, id_product, size)
 
         if (!check) {
-            let add = await addCart(id_account, id_product, quantity)
+            let add = await addCart(id_account, id_product, quantity, size)
             return res.status(200).json({
                 message: 'Thêm vào giỏ hàng thành công'
             })
