@@ -56,7 +56,7 @@ let selectAccount = (id_account) => {
     return new Promise(async (resolve, reject) => {
         try {
             let [data] = await pool.execute
-                ('select c.id_product,c.quantity,p.name,p.price,p.images,c.size from cart c,product p where c.id_account=? and c.id_product =p.id_product', [id_account])
+                ('select c.id_product,c.quantity,p.name,p.price,p.images,c.size,c.price_size from cart c,product p where c.id_account=? and c.id_product =p.id_product', [id_account])
             //console.log(data);
             resolve(data)
         } catch (error) {
@@ -131,11 +131,11 @@ let addQuantity = (id_cart, quantity, size) => {
     })
 }
 
-let addCart = (id_account, id_product, quantity, size) => {
+let addCart = (id_account, id_product, price_size, quantity, size) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let add = await pool.execute('insert into cart (id_account, id_product, quantity,size) values (?,?,?,?)',
-                [id_account, id_product, quantity, size])
+            let add = await pool.execute('insert into cart (id_account, id_product,price_size, quantity,size) values (?,?,?,?,?)',
+                [id_account, id_product, price_size, quantity, size])
             //console.log('Check addCart: ', add);
             resolve(add)
         } catch (error) {
@@ -163,8 +163,8 @@ let addProduct = async (req, res) => {
         let quantity = Number(req.body.quantity)
         let id_account = auth.tokenData(req).id_account
 
-        let size = req.body.size
-        console.log('Test body: ', id_product, quantity, id_account, 'Size: ', size);
+        let { price_size, size } = req.body
+        console.log('Test body: ', id_product, quantity, id_account, 'price_size: ', price_size, 'Size: ', size);
         if (quantity < 1) {
             return res.json({
                 message: 'Số lượng phải lớn hơn 0'
@@ -177,15 +177,15 @@ let addProduct = async (req, res) => {
 
         //Check xem sản phẩm muốn thêm có trong giỏ hàng chưa
         let check = await hasProductAccount(id_account, id_product, size)
-
+        console.log('check tao lao: ', check);
         if (!check) {
-            let add = await addCart(id_account, id_product, quantity, size)
+            let add = await addCart(id_account, id_product, price_size, quantity, size)
             return res.status(200).json({
                 message: 'Thêm vào giỏ hàng thành công'
             })
         } else {
             let id_cart = check.id_cart
-            let add = await addQuantity(id_cart, quantity)
+            let add = await addQuantity(id_cart, quantity, size)
             return res.status(200).json({
                 message: 'Thêm thành công'
             })
@@ -198,10 +198,10 @@ let addProduct = async (req, res) => {
 ////////////////////////////////////////
 
 //=========Xóa 1 sản phẩm khỏi giỏ hàng
-let deleteProduct = (id_product, id_account) => {
+let deleteProduct = (id_product, id_account, size) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let deleted = await pool.execute('delete from cart where id_product=? and id_account=?', [id_product, id_account])
+            let deleted = await pool.execute('delete from cart where id_product=? and id_account=? and size=?', [id_product, id_account, size])
             console.log('>>Check delete Product', deleted);
             resolve(deleted)
         } catch (error) {
@@ -210,12 +210,12 @@ let deleteProduct = (id_product, id_account) => {
     })
 }
 
-let hasCart = (id_product, id_account) => {
+let hasCart = (id_product, id_account, size) => {
     return new Promise(async (resolve, reject) => {
         try {
             //let exist=pool.execute('delete from cart where id_cart=? and id_account=?',[id_cart,id_account])
             let check = {}
-            let [rowCount] = await pool.execute('select count(*) as count from cart where id_product=? and id_account=? ', [id_product, id_account])
+            let [rowCount] = await pool.execute('select count(*) as count from cart where id_product=? and id_account=? and size =?', [id_product, id_account, size])
             console.log(rowCount);
             check.exist = rowCount[0].count > 0
             resolve(
@@ -231,21 +231,23 @@ let deleteProductFromCart = async (req, res) => {
     try {
         let id_product = req.params.id_product
         let id_account = auth.tokenData(req).id_account
+        let size = req.body.size;
+        console.log('Size: ', size);
         if (!id_product) {
             return res.json({
                 message: "Giỏ hàng không tồn tại"
             })
         }
-        let check = await hasCart(id_product, id_account)
+        let check = await hasCart(id_product, id_account, size)
         if (check.exist) {
-            let deleted = await deleteProduct(id_product, id_account)
+            let deleted = await deleteProduct(id_product, id_account, size)
         }
         else {
-            return res.json({
+            return res.status(200).json({
                 message: 'Giỏ hàng không tồn tại'
             })
         }
-        return res.json({
+        return res.status(200).json({
             message: 'Xóa Thành công sản phẩm trong giỏ'
         })
     } catch (err) {
@@ -266,10 +268,52 @@ let addCategory = (name, logo) => {
         }
     })
 }
+
+let giamSoLuongCart = async (req, res) => {
+    try {
+        let id_product = req.params.id_product
+        let id_account = auth.tokenData(req).id_account
+        let quantity = req.body.data.quantity
+        let size = req.body.data.size
+        console.log(id_product, id_account, quantity, size);
+        if (quantity > 0) {
+            let giam = await pool.execute('UPDATE `cart` SET quantity=? WHERE id_product=? and id_account=? and size=?', [quantity - 1, id_product, id_account, size])
+        }
+        return res.status(200).json({
+            message: 'Xóa Thành công sản phẩm trong giỏ'
+        })
+    } catch (err) {
+        console.log(err);
+        return res.sendStatus(500)
+    }
+}
+
+let tangSoLuongCart = async (req, res) => {
+    try {
+        let id_product = req.params.id_product
+        let id_account = auth.tokenData(req).id_account
+        let quantity = req.body.data.quantity
+        let size = req.body.data.size
+        console.log(id_product, id_account, quantity, size);
+        if (quantity > 0) {
+            let giam = await pool.execute(' UPDATE `cart` SET quantity=? WHERE id_product=? and id_account=? and size=?', [quantity + 1, id_product, id_account, size])
+        }
+        return res.status(200).json({
+            message: 'Xóa Thành công sản phẩm trong giỏ'
+        })
+    } catch (err) {
+        console.log(err);
+        return res.sendStatus(500)
+    }
+}
+
 module.exports = {
     getCart,
     addProduct,
     deleteProductFromCart,
     pay,
-    addCategory
+    addCategory,
+    giamSoLuongCart,
+    tangSoLuongCart
+
 }

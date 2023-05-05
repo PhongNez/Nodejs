@@ -61,8 +61,7 @@ const initAPIRoute = (app) => {
     //Thanh toán 
     router.post('/pay', auth.authenUser, CartController.pay)
 
-    //Sửa thông tin cá nhân 
-    router.post('/modified/:id_account', auth.authenUser, UserController.updateInfo)
+
 
     router.post('/search', UserController.searchProduct)
 
@@ -108,7 +107,21 @@ const initAPIRoute = (app) => {
     //APi đánh giá năng lực
     router.get('/account/xemDanhGia?:id_product', APIController.getRated)
     router.post('/account/rating', APIController.rateComment)
+
+    //API giỏ hàng 
+    router.put('/account/giamSoLuongCart/:id_product', CartController.giamSoLuongCart);
+    router.put('/account/tangSoLuongCart/:id_product', CartController.tangSoLuongCart);
+
+    //API đặt hàng mới hoàn toàn
+    router.post('/dathang/', OrderController.datHangNew)
+
+    //API sửa thông tin cá nhân 
+    router.put('/modified/:id_account', auth.authenUser, UserController.updateInfo)
+
+
     return app.use('/api/v1/', router)
+
+
 }
 
 export default initAPIRoute

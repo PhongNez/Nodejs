@@ -114,14 +114,16 @@ let updateInfo = async (req, res) => {
     try {
         let { name, phone, address, avatar } = req.body
         let { id_account } = req.params
-        if (!name || !phone || !address || !avatar) {
+        console.log(name, phone, address, id_account);
+        if (!name || !phone || !address) {
             return res.status(400).json({
                 message: 'Không được bỏ trống!'
             })
         }
-        let update = await handleUpdate(name, phone, address, avatar, id_account)
+        // let update = await handleUpdate(name, phone, address, avatar, id_account)
+        let update = await pool.execute('update account set name=?,phone=?,address=? where id_account=?', [name, phone, address, id_account])
         return res.status(200).json({
-            message: 'Thành công!'
+            message: 'Cập nhật thông tin thành công!'
         })
     }
     catch (err) {

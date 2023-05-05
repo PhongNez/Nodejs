@@ -39,10 +39,10 @@ let listDetailOrder = (id_order, id_account) => {
     })
 }
 
-let insertDetailOrder = (id_order, id_product, quantity, name, price) => {
+let insertDetailOrder = (id_order, id_product, quantity, name, price, size) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let [insert] = await pool.execute('insert into order_detail(id_order,id_product,amount,name,price) values(?,?,?,?,?)', [id_order, id_product, quantity, name, price])
+            let [insert] = await pool.execute('insert into order_detail(id_order,id_product,amount,name,price,size) values(?,?,?,?,?,?)', [id_order, id_product, quantity, name, price, size])
             console.log('>>> check insert: ', insert);
             resolve(insert)
         } catch (err) {
@@ -242,6 +242,47 @@ let xemDoanhSo = async (req, res) => {
         listDoanhSo: listDoanhSo
     })
 }
+
+let datHangNew = async (req, res) => {
+    let id_account = auth.tokenData(req).id_account
+    let arr = req.body.arr
+    let check = await checkCart(id_account)
+    if (check) {
+        let insert = await insertOrder(id_account)
+        let id_order = insert.id_order
+        let listDetails = await listDetailOrder(id_order, id_account)//list cart giỏ
+
+        console.log('Id_order:', id_order);
+        console.log('>>Check list detail: ', arr);
+        if (arr) {
+            for (let i in arr) {
+                //(id_order, id_product, quantity, name, price, size)
+                console.log(id_order, arr[i].id_product, arr[i].quantity, arr[i].name, arr[i].price_size, arr[i].size);
+                let insert = await insertDetailOrder(id_order, arr[i].id_product, arr[i].quantity, arr[i].name, arr[i].price_size, arr[i].size)
+                // (id_account, id_product)
+                console.log(insert);
+            }
+            for (let i in listDetails) {
+                let del = await deleteCart(id_account, listDetails[i].id_product)
+            }
+            // console.log(arr, 'Và:', listDetails);
+        }
+        else {
+            return res.status(400).json({
+                message: 'Đặt hàng thất bại!'
+            })
+        }
+    }
+    else {
+        return res.status(400).json({
+            message: 'Giỏ hàng của bạn trống nên không thể đặt hàng!'
+        })
+    }
+    return res.status(200).json({
+        orders: 'Đặt hàng thành công!'
+    })
+}
+
 module.exports = {
     getOrder,
     getDetailOrder,
@@ -249,5 +290,6 @@ module.exports = {
     xacNhanDonHang,
     hoanThanhDonHang,
     huyDonHang,
-    xemDoanhSo
+    xemDoanhSo,
+    datHangNew
 }
